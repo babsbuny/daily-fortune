@@ -42,17 +42,17 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /* safe center: 화면이 콘텐츠보다 낮아도 위쪽이 잘리지 않고 스크롤 가능 */
+  justify-content: safe center;
   gap: 2.4rem;
-  padding: 3rem 1.5rem;
-  overflow: hidden;
+  padding: 2.5rem 1.5rem;
 }
 
 /* 무지개 오로라 배경 */
 .page::before {
   content: "";
-  position: absolute;
-  inset: -20%;
+  position: fixed;
+  inset: 0;
   background:
     radial-gradient(32% 26% at 18% 20%, rgba(255, 90, 90, 0.14), transparent 70%),
     radial-gradient(30% 24% at 82% 16%, rgba(255, 217, 61, 0.11), transparent 70%),
