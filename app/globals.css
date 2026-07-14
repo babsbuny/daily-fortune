@@ -1,0 +1,257 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #0b0a0e;
+  --ink: #ece7de;
+  --ink-dim: #8f8a80;
+  --gold: #cfa76a;
+  --gold-soft: rgba(207, 167, 106, 0.35);
+  --serif: "Cormorant Garamond", "Playfair Display", Didot, "Bodoni MT", serif;
+  --sans: Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", -apple-system, sans-serif;
+}
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+.page {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2.4rem;
+  padding: 3rem 1.5rem;
+  overflow: hidden;
+}
+
+/* 은은한 배경 광 */
+.page::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(38% 30% at 50% 8%, rgba(207, 167, 106, 0.10), transparent 70%),
+    radial-gradient(45% 40% at 85% 90%, rgba(90, 70, 140, 0.12), transparent 70%);
+  pointer-events: none;
+}
+
+/* 헤더 */
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  z-index: 1;
+}
+
+.eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.45em;
+  color: var(--gold);
+}
+
+.title {
+  font-family: var(--serif);
+  font-size: 3rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.subtitle {
+  color: var(--ink-dim);
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
+}
+
+/* 카드 */
+.scene {
+  width: 300px;
+  height: 440px;
+  perspective: 1400px;
+  z-index: 1;
+}
+
+.card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.8s cubic-bezier(0.3, 0.1, 0.15, 1);
+}
+
+.card.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.card-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 16px;
+  background: linear-gradient(165deg, #16141b 0%, #0e0d12 100%);
+  border: 1px solid rgba(207, 167, 106, 0.28);
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  padding: 14px;
+}
+
+/* 이중 금테 프레임 */
+.card-frame {
+  height: 100%;
+  border: 1px solid var(--gold-soft);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1.6rem 1.4rem;
+  text-align: center;
+}
+
+/* 앞면 */
+.front-star {
+  font-size: 3.4rem;
+  color: var(--gold);
+  text-shadow: 0 0 30px rgba(207, 167, 106, 0.55);
+  animation: breathe 3.2s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+
+.front-label {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  letter-spacing: 0.42em;
+  color: var(--ink);
+}
+
+.front-sub {
+  font-size: 0.68rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+/* 뒷면 */
+.card-back {
+  transform: rotateY(180deg);
+}
+
+.back-frame {
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 1.5rem 1.3rem;
+}
+
+.score-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.score-label {
+  font-size: 0.62rem;
+  letter-spacing: 0.4em;
+  color: var(--ink-dim);
+}
+
+.score-value {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  color: var(--gold);
+}
+
+.keyword-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.keyword {
+  font-family: var(--serif);
+  font-size: 2.3rem;
+  font-weight: 500;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  line-height: 1.05;
+}
+
+.keyword-kr {
+  font-size: 0.82rem;
+  letter-spacing: 0.5em;
+  text-indent: 0.5em;
+  color: var(--gold);
+}
+
+.message {
+  font-size: 0.92rem;
+  line-height: 1.75;
+  color: #c9c3b8;
+  word-break: keep-all;
+}
+
+.divider {
+  width: 42px;
+  height: 1px;
+  background: var(--gold-soft);
+}
+
+.lucky-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.lucky-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.4em;
+  color: var(--ink-dim);
+}
+
+.lucky-value {
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+}
+
+/* 버튼 */
+.draw-button {
+  z-index: 1;
+  font-family: var(--serif);
+  font-size: 1rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  padding: 0.95rem 2.8rem;
+  background: transparent;
+  color: var(--gold);
+  border: 1px solid var(--gold-soft);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.draw-button:hover {
+  border-color: var(--gold);
+  box-shadow: 0 0 28px rgba(207, 167, 106, 0.22);
+  background: rgba(207, 167, 106, 0.06);
+}
+
+.draw-button:active {
+  transform: scale(0.98);
+}
