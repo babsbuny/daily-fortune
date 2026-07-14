@@ -7,7 +7,7 @@
 :root {
   --bg: #0b0a0e;
   --ink: #f2eff7;
-  --ink-dim: #948fa0;
+  --ink-dim: #9c96ad;
   --red: #ff5a5a;
   --orange: #ff9f43;
   --yellow: #ffd93d;
@@ -25,6 +25,9 @@
     var(--indigo),
     var(--violet)
   );
+  /* 카드마다 달라지는 포인트 색 (page.jsx에서 --h 주입) */
+  --accent: hsl(var(--h, 268) 85% 66%);
+  --accent-soft: hsl(var(--h, 268) 85% 66% / 0.35);
   --serif: "Cormorant Garamond", "Playfair Display", Didot, "Bodoni MT", serif;
   --sans: Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", -apple-system, sans-serif;
 }
@@ -42,23 +45,34 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* safe center: 화면이 콘텐츠보다 낮아도 위쪽이 잘리지 않고 스크롤 가능 */
   justify-content: safe center;
-  gap: 2.4rem;
-  padding: 2.5rem 1.5rem;
+  gap: 1.7rem;
+  padding: 2rem 1.5rem;
 }
 
-/* 무지개 오로라 배경 */
+/* 오로라 + 미세한 별빛 배경 */
 .page::before {
   content: "";
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(32% 26% at 18% 20%, rgba(255, 90, 90, 0.14), transparent 70%),
-    radial-gradient(30% 24% at 82% 16%, rgba(255, 217, 61, 0.11), transparent 70%),
-    radial-gradient(34% 28% at 12% 82%, rgba(77, 150, 255, 0.14), transparent 70%),
-    radial-gradient(34% 28% at 86% 84%, rgba(196, 107, 255, 0.15), transparent 70%),
-    radial-gradient(26% 22% at 50% 55%, rgba(94, 203, 119, 0.08), transparent 70%);
+    radial-gradient(32% 26% at 18% 20%, rgba(255, 90, 90, 0.12), transparent 70%),
+    radial-gradient(30% 24% at 82% 16%, rgba(255, 217, 61, 0.09), transparent 70%),
+    radial-gradient(34% 28% at 12% 82%, rgba(77, 150, 255, 0.12), transparent 70%),
+    radial-gradient(34% 28% at 86% 84%, rgba(196, 107, 255, 0.13), transparent 70%);
+  pointer-events: none;
+}
+
+.page::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.35) 0.6px, transparent 0.6px),
+    radial-gradient(rgba(255, 255, 255, 0.18) 0.5px, transparent 0.5px);
+  background-size: 170px 170px, 90px 90px;
+  background-position: 10px 20px, 40px 60px;
+  opacity: 0.35;
   pointer-events: none;
 }
 
@@ -67,25 +81,32 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.6rem;
   z-index: 1;
 }
 
-.eyebrow {
-  font-size: 0.72rem;
-  letter-spacing: 0.45em;
-  background: var(--rainbow);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+.date-chip {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  color: var(--ink-dim);
+  padding: 0.36rem 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .title {
   font-family: var(--serif);
-  font-size: 3rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
+  font-size: 2.3rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
   line-height: 1.15;
+  color: var(--ink);
+}
+
+.title em {
+  font-style: italic;
   background: var(--rainbow);
   -webkit-background-clip: text;
   background-clip: text;
@@ -94,15 +115,14 @@ body {
 
 .subtitle {
   color: var(--ink-dim);
-  font-size: 0.92rem;
-  letter-spacing: 0.02em;
+  font-size: 0.86rem;
 }
 
 /* 카드 */
 .scene {
-  width: 300px;
-  height: 440px;
-  perspective: 1400px;
+  width: 264px;
+  height: 396px;
+  perspective: 1300px;
   z-index: 1;
 }
 
@@ -114,65 +134,96 @@ body {
   transition: transform 0.8s cubic-bezier(0.3, 0.1, 0.15, 1);
 }
 
+.scene:hover .card:not(.is-flipped) {
+  transform: rotateY(8deg) rotateX(-4deg);
+}
+
 .card.is-flipped {
   transform: rotateY(180deg);
 }
 
-/* 무지개 그라데이션 테두리 */
 .card-face {
   position: absolute;
   inset: 0;
   backface-visibility: hidden;
-  border-radius: 16px;
-  border: 2px solid transparent;
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1.5px solid transparent;
   background:
-    linear-gradient(165deg, #16141b 0%, #0e0d12 100%) padding-box,
+    linear-gradient(165deg, #17141f 0%, #0d0b13 100%) padding-box,
     var(--rainbow) border-box;
   box-shadow:
-    0 30px 60px rgba(0, 0, 0, 0.55),
-    0 0 40px rgba(196, 107, 255, 0.12);
-  padding: 14px;
-}
-
-.card-frame {
-  height: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 10px;
+    0 24px 48px rgba(0, 0, 0, 0.5),
+    0 0 32px rgba(196, 107, 255, 0.1);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
-  padding: 1.6rem 1.4rem;
+  gap: 0.9rem;
+  padding: 1.5rem 1.3rem;
   text-align: center;
 }
 
+/* 홀로그램 사선 광택 */
+.holo {
+  position: absolute;
+  inset: -40%;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.05) 42%,
+    rgba(196, 107, 255, 0.10) 50%,
+    rgba(77, 150, 255, 0.08) 56%,
+    transparent 68%
+  );
+  animation: holo-sweep 5.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes holo-sweep {
+  0%, 100% { transform: translateX(-18%) rotate(0.001deg); }
+  50% { transform: translateX(18%) rotate(0.001deg); }
+}
+
 /* 앞면 */
+.front-ring {
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  outline: 1px solid rgba(255, 255, 255, 0.06);
+  outline-offset: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .front-star {
-  font-size: 3.4rem;
+  font-size: 2.6rem;
   background: var(--rainbow);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 0 18px rgba(196, 107, 255, 0.45));
+  filter: drop-shadow(0 0 16px rgba(196, 107, 255, 0.5));
   animation: breathe 3.2s ease-in-out infinite;
 }
 
 @keyframes breathe {
-  0%, 100% { opacity: 0.75; transform: scale(1); filter: drop-shadow(0 0 12px rgba(77, 150, 255, 0.4)) hue-rotate(0deg); }
-  50% { opacity: 1; transform: scale(1.06); filter: drop-shadow(0 0 22px rgba(255, 90, 90, 0.45)) hue-rotate(40deg); }
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
 }
 
 .front-label {
   font-family: var(--serif);
-  font-size: 1.05rem;
-  letter-spacing: 0.42em;
+  font-size: 0.95rem;
+  letter-spacing: 0.36em;
+  text-indent: 0.36em;
   color: var(--ink);
 }
 
 .front-sub {
-  font-size: 0.68rem;
-  letter-spacing: 0.3em;
+  font-size: 0.62rem;
+  letter-spacing: 0.26em;
   text-transform: uppercase;
   color: var(--ink-dim);
 }
@@ -180,110 +231,146 @@ body {
 /* 뒷면 */
 .card-back {
   transform: rotateY(180deg);
-}
-
-.back-frame {
   justify-content: space-between;
-  gap: 0.6rem;
-  padding: 1.5rem 1.3rem;
+  gap: 0.55rem;
+  padding: 1.4rem 1.25rem;
 }
 
-.score-row {
+/* 행운 지수 게이지 링 */
+.luck-ring {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from -90deg,
+    var(--accent) calc(var(--score, 80) * 1%),
+    rgba(255, 255, 255, 0.08) 0
+  );
   display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 0 14px var(--accent-soft));
 }
 
-.score-label {
-  font-size: 0.62rem;
-  letter-spacing: 0.4em;
+.luck-ring-inner {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #131019;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.05rem;
+}
+
+.luck-ring-inner strong {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.luck-ring-inner span {
+  font-size: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
   color: var(--ink-dim);
-}
-
-.score-value {
-  font-family: var(--serif);
-  font-size: 1.5rem;
-  background: linear-gradient(100deg, var(--orange), var(--red));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
 }
 
 .keyword-block {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.3rem;
 }
 
 .keyword {
   font-family: var(--serif);
-  font-size: 2.3rem;
-  font-weight: 500;
+  font-size: 1.9rem;
+  font-weight: 600;
   font-style: italic;
-  letter-spacing: 0.02em;
   line-height: 1.1;
-  background: var(--rainbow);
+  background: linear-gradient(100deg, var(--accent), hsl(calc(var(--h, 268) + 70) 85% 70%));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 .keyword-kr {
-  font-size: 0.82rem;
-  letter-spacing: 0.5em;
-  text-indent: 0.5em;
-  background: linear-gradient(100deg, var(--blue), var(--violet));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-indent: 0.2em;
+  color: var(--ink-dim);
 }
 
 .message {
-  font-size: 0.92rem;
-  line-height: 1.75;
-  color: #cdc8d6;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.7;
+  color: #e6e1f2;
   word-break: keep-all;
 }
 
-/* 무지개 구분선 */
-.divider {
-  width: 64px;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--rainbow);
+/* 행운의 아이템 칩 */
+.lucky-chip {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  text-align: left;
 }
 
-.lucky-row {
+.lucky-emoji {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(#1a1622, #1a1622) padding-box,
+    linear-gradient(135deg, var(--accent), hsl(calc(var(--h, 268) + 70) 85% 70%)) border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.lucky-texts {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.15rem;
 }
 
 .lucky-label {
-  font-size: 0.6rem;
-  letter-spacing: 0.4em;
-  background: linear-gradient(100deg, var(--green), var(--blue));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  font-size: 0.56rem;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  color: var(--ink-dim);
 }
 
-.lucky-value {
-  font-size: 1rem;
-  letter-spacing: 0.12em;
+.lucky-name {
+  font-size: 0.95rem;
+  font-weight: 700;
   color: var(--ink);
 }
 
 /* 버튼 */
 .draw-button {
   z-index: 1;
-  font-family: var(--serif);
-  font-size: 1rem;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  padding: 0.95rem 2.8rem;
+  font-family: var(--sans);
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-indent: 0.14em;
+  padding: 0.8rem 2.4rem;
   color: var(--ink);
-  border: 2px solid transparent;
+  border: 1.5px solid transparent;
   border-radius: 999px;
   background:
     linear-gradient(var(--bg), var(--bg)) padding-box,
@@ -294,9 +381,9 @@ body {
 
 .draw-button:hover {
   box-shadow:
-    0 0 20px rgba(255, 90, 90, 0.18),
-    0 0 34px rgba(77, 150, 255, 0.18),
-    0 0 48px rgba(196, 107, 255, 0.16);
+    0 0 18px rgba(255, 90, 90, 0.16),
+    0 0 30px rgba(77, 150, 255, 0.16),
+    0 0 44px rgba(196, 107, 255, 0.15);
   transform: translateY(-1px);
 }
 
