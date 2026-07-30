@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const FORTUNES = [
   {
@@ -94,22 +94,61 @@ function pickRandom(list) {
   return list[Math.floor(Math.random() * list.length)];
 }
 
+const STORAGE_KEY = "fortune-history";
+
+function formatTime(iso) {
+  const d = new Date(iso);
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 export default function Home() {
   const [flipped, setFlipped] = useState(false);
   const [fortune, setFortune] = useState(null);
   const [item, setItem] = useState(null);
+  const [history, setHistory] = useState([]);
+
+  // localStorage는 브라우저에만 있으므로 마운트 후에 불러온다 (SSR 하이드레이션 오류 방지)
+  useEffect(() => {
+    try {
+      setHistory(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"));
+    } catch {
+      setHistory([]);
+    }
+  }, []);
+
+  const draw = () => {
+    const f = pickRandom(FORTUNES);
+    const it = pickRandom(LUCKY_ITEMS);
+    setFortune(f);
+    setItem(it);
+    setHistory((prev) => {
+      const next = [
+        {
+          at: new Date().toISOString(),
+          keyword: f.keyword,
+          kr: f.kr,
+          score: f.score,
+          item: `${it.emoji} ${it.name}`,
+        },
+        ...prev,
+      ];
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
 
   const drawFortune = () => {
     if (flipped) {
       setFlipped(false);
       setTimeout(() => {
-        setFortune(pickRandom(FORTUNES));
-        setItem(pickRandom(LUCKY_ITEMS));
+        draw();
         setFlipped(true);
       }, 450);
     } else {
-      setFortune(pickRandom(FORTUNES));
-      setItem(pickRandom(LUCKY_ITEMS));
+      draw();
       setFlipped(true);
     }
   };
@@ -175,6 +214,38 @@ export default function Home() {
       <button className="draw-button" onClick={drawFortune}>
         {flipped ? "다시 뽑기" : "운세 뽑기"}
       </button>
+
+      <section className="history">
+        <h2 className="history-title">내 운세 기록</h2>
+        {history.length === 0 ? (
+          <p className="history-empty">아직 뽑은 운세가 없습니다. 첫 카드를 뽑아보세요!</p>
+        ) : (
+          <div className="history-table-wrap">
+            <table className="history-table">
+              <thead>
+                <tr>
+                  <th>뽑은 시각</th>
+                  <th>운세</th>
+                  <th>지수</th>
+                  <th>행운의 아이템</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((h, i) => (
+                  <tr key={h.at + i}>
+                    <td className="h-time">{formatTime(h.at)}</td>
+                    <td className="h-keyword">
+                      {h.keyword} <span className="h-kr">{h.kr}</span>
+                    </td>
+                    <td className="h-score">{h.score}</td>
+                    <td className="h-item">{h.item}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </main>
   );
 }

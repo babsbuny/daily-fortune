@@ -390,3 +390,88 @@ body {
 .draw-button:active {
   transform: scale(0.98);
 }
+
+/* 내 운세 기록 */
+.history {
+  z-index: 1;
+  width: min(560px, 100%);
+  margin-top: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.history-title {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  text-align: center;
+}
+
+.history-empty {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+}
+
+.history-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.history-table th {
+  padding: 0.65rem 0.9rem;
+  text-align: left;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--ink-dim);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  white-space: nowrap;
+}
+
+.history-table td {
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  white-space: nowrap;
+}
+
+.history-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.h-time {
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.h-keyword {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.h-kr {
+  font-weight: 500;
+  font-size: 0.76rem;
+  color: var(--ink-dim);
+  margin-left: 0.2rem;
+}
+
+.h-score {
+  font-weight: 700;
+  color: var(--violet);
+  font-variant-numeric: tabular-nums;
+}
+
+.h-item {
+  color: #e6e1f2;
+}
