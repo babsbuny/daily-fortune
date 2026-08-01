@@ -32,7 +32,8 @@ function extractJson(text) {
 }
 
 export async function POST(request) {
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  // 복사-붙여넣기로 섞여 들어온 공백/개행 제거 (개행이 있으면 HTTP 헤더 생성이 실패함)
+  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
   if (!apiKey) {
     return Response.json({ error: "missing_api_key" }, { status: 503 });
   }
