@@ -19,6 +19,24 @@ const SYSTEM_PROMPT = `너는 '오늘의 운세' 카드를 만들어 주는 다�
   "zodiac": "별자리 이름 (예: 사자자리) 또는 null"
 }`;
 
+// 별자리는 모델에게 맡기지 않고 서버에서 정확히 계산한다
+function zodiacOf(dateStr) {
+  const [, m, d] = dateStr.split("-").map(Number);
+  const md = m * 100 + d;
+  if (md >= 321 && md <= 419) return "양자리";
+  if (md >= 420 && md <= 520) return "황소자리";
+  if (md >= 521 && md <= 621) return "쌍둥이자리";
+  if (md >= 622 && md <= 722) return "게자리";
+  if (md >= 723 && md <= 822) return "사자자리";
+  if (md >= 823 && md <= 922) return "처녀자리";
+  if (md >= 923 && md <= 1022) return "천칭자리";
+  if (md >= 1023 && md <= 1122) return "전갈자리";
+  if (md >= 1123 && md <= 1221) return "사수자리";
+  if (md >= 1222 || md <= 119) return "염소자리";
+  if (md >= 120 && md <= 218) return "물병자리";
+  return "물고기자리";
+}
+
 const THEME_HINTS = [
   "일과 도전", "관계와 만남", "휴식과 회복", "창작과 영감", "배움과 성장",
   "우연과 발견", "정리와 비움", "용기와 시작", "감사와 여유", "집중과 몰입",
@@ -55,6 +73,7 @@ export async function POST(request) {
   }).format(new Date());
 
   const hint = THEME_HINTS[Math.floor(Math.random() * THEME_HINTS.length)];
+  const zodiac = birthDate ? zodiacOf(birthDate) : null;
 
   try {
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -74,7 +93,9 @@ export async function POST(request) {
             role: "user",
             content: [
               `오늘은 ${today}.`,
-              birthDate ? `사용자의 생년월일: ${birthDate} (양력).` : "생년월일 정보 없음.",
+              zodiac
+                ? `사용자의 별자리: ${zodiac} (생년월일 ${birthDate}). 이 별자리를 그대로 사용하고 다시 계산하지 마라.`
+                : "생년월일 정보 없음.",
               `오늘의 테마 힌트: ${hint}.`,
               "오늘의 운세 카드 1장을 생성해줘.",
             ].join("\n"),
@@ -93,7 +114,9 @@ export async function POST(request) {
     const text = data.choices?.[0]?.message?.content;
     if (!text) throw new Error("empty completion");
 
-    return Response.json(extractJson(text));
+    const card = extractJson(text);
+    card.zodiac = zodiac; // 서버 계산 값으로 강제 — 모델의 계산 실수 방지
+    return Response.json(card);
   } catch (err) {
     console.error("fortune api error:", err?.message ?? err);
     return Response.json({ error: "generation_failed" }, { status: 502 });
