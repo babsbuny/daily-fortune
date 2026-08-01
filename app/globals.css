@@ -391,6 +391,101 @@ body {
   transform: scale(0.98);
 }
 
+/* 로그인 */
+.auth-corner {
+  position: fixed;
+  top: 1rem;
+  right: 1.2rem;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.auth-email {
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+}
+
+.auth-link {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.auth-link:hover {
+  border-color: var(--violet);
+}
+
+.auth-form {
+  z-index: 1;
+  width: min(320px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.auth-input {
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  color: var(--ink);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 0.65rem 0.9rem;
+  outline: none;
+}
+
+.auth-input:focus {
+  border-color: var(--indigo);
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.auth-submit {
+  flex: 1;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink);
+  padding: 0.6rem 0;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  background:
+    linear-gradient(var(--bg), var(--bg)) padding-box,
+    var(--rainbow) border-box;
+  cursor: pointer;
+}
+
+.auth-submit.ghost {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.auth-submit:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.auth-msg {
+  font-size: 0.78rem;
+  color: var(--yellow);
+  text-align: center;
+}
+
 /* 내 운세 기록 */
 .history {
   z-index: 1;

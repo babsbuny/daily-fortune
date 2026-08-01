@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabase";
 
 const FORTUNES = [
   {
@@ -96,44 +97,6 @@ function pickRandom(list) {
 
 const STORAGE_KEY = "fortune-history";
 
-// Supabase 연결 정보 (없으면 localStorage만 사용)
-const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPA_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supaEnabled = Boolean(SUPA_URL && SUPA_KEY);
-const supaHeaders = {
-  apikey: SUPA_KEY,
-  "Content-Type": "application/json",
-};
-
-async function fetchHistoryFromSupabase() {
-  const res = await fetch(
-    `${SUPA_URL}/rest/v1/fortune_history?select=created_at,keyword,kr,score,item&order=created_at.desc&limit=50`,
-    { headers: supaHeaders }
-  );
-  if (!res.ok) throw new Error(`supabase select failed: ${res.status}`);
-  const rows = await res.json();
-  return rows.map((r) => ({
-    at: r.created_at,
-    keyword: r.keyword,
-    kr: r.kr,
-    score: r.score,
-    item: r.item,
-  }));
-}
-
-function insertHistoryToSupabase(entry) {
-  return fetch(`${SUPA_URL}/rest/v1/fortune_history`, {
-    method: "POST",
-    headers: supaHeaders,
-    body: JSON.stringify({
-      keyword: entry.keyword,
-      kr: entry.kr,
-      score: entry.score,
-      item: entry.item,
-    }),
-  });
-}
-
 function formatTime(iso) {
   const d = new Date(iso);
   const p = (n) => String(n).padStart(2, "0");
@@ -146,8 +109,25 @@ export default function Home() {
   const [item, setItem] = useState(null);
   const [history, setHistory] = useState([]);
 
-  // 기록 불러오기: Supabase가 연결돼 있으면 서버에서, 아니면 localStorage에서
-  // (localStorage는 브라우저에만 있으므로 마운트 후에 불러온다 — SSR 하이드레이션 오류 방지)
+  // 로그인 상태
+  const [user, setUser] = useState(null);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authMsg, setAuthMsg] = useState("");
+  const [authBusy, setAuthBusy] = useState(false);
+
+  // 세션 감지: 로그인/로그아웃 시 user 상태 자동 갱신
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null));
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  // 기록 불러오기: 로그인 시 내 기록만, 비로그인 시 익명 기록만
   useEffect(() => {
     const loadLocal = () => {
       try {
@@ -156,12 +136,21 @@ export default function Home() {
         setHistory([]);
       }
     };
-    if (supaEnabled) {
-      fetchHistoryFromSupabase().then(setHistory).catch(loadLocal);
-    } else {
+    if (!supabase) {
       loadLocal();
+      return;
     }
-  }, []);
+    let query = supabase
+      .from("fortune_history")
+      .select("created_at,keyword,kr,score,item")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    query = user ? query.eq("user_id", user.id) : query.is("user_id", null);
+    query.then(({ data, error }) => {
+      if (error) loadLocal();
+      else setHistory(data.map((r) => ({ at: r.created_at, ...r })));
+    });
+  }, [user]);
 
   const draw = () => {
     const f = pickRandom(FORTUNES);
@@ -175,8 +164,12 @@ export default function Home() {
       score: f.score,
       item: `${it.emoji} ${it.name}`,
     };
-    if (supaEnabled) {
-      insertHistoryToSupabase(entry).catch(() => {});
+    if (supabase) {
+      // user_id는 DB 기본값 auth.uid()로 자동 지정됨
+      supabase
+        .from("fortune_history")
+        .insert({ keyword: entry.keyword, kr: entry.kr, score: entry.score, item: entry.item })
+        .then(() => {});
     }
     setHistory((prev) => {
       const next = [entry, ...prev];
@@ -200,11 +193,60 @@ export default function Home() {
     }
   };
 
+  const signIn = async () => {
+    setAuthBusy(true);
+    setAuthMsg("");
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setAuthBusy(false);
+    if (error) setAuthMsg("로그인 실패: 이메일 또는 비밀번호를 확인하세요");
+    else {
+      setAuthOpen(false);
+      setEmail("");
+      setPassword("");
+    }
+  };
+
+  const signUp = async () => {
+    setAuthBusy(true);
+    setAuthMsg("");
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    setAuthBusy(false);
+    if (error) setAuthMsg(`가입 실패: ${error.message}`);
+    else if (data.session) {
+      setAuthOpen(false);
+      setEmail("");
+      setPassword("");
+    } else {
+      setAuthMsg("가입 완료! 메일함에서 확인 링크를 눌러주세요");
+    }
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+  };
+
   const today = new Date();
   const dateLabel = `${today.getFullYear()}. ${String(today.getMonth() + 1).padStart(2, "0")}. ${String(today.getDate()).padStart(2, "0")}`;
 
   return (
     <main className="page">
+      {supabase && (
+        <div className="auth-corner">
+          {user ? (
+            <>
+              <span className="auth-email">✨ {user.email}</span>
+              <button className="auth-link" onClick={signOut}>
+                로그아웃
+              </button>
+            </>
+          ) : (
+            <button className="auth-link" onClick={() => setAuthOpen((v) => !v)}>
+              로그인
+            </button>
+          )}
+        </div>
+      )}
+
       <header className="header">
         <span className="date-chip">TODAY · {dateLabel}</span>
         <h1 className="title">
@@ -212,6 +254,43 @@ export default function Home() {
         </h1>
         <p className="subtitle">카드가 오늘 하루의 흐름을 읽어드립니다</p>
       </header>
+
+      {supabase && authOpen && !user && (
+        <form
+          className="auth-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            signIn();
+          }}
+        >
+          <input
+            className="auth-input"
+            type="email"
+            placeholder="이메일"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <input
+            className="auth-input"
+            type="password"
+            placeholder="비밀번호 (6자 이상)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            minLength={6}
+            required
+          />
+          <div className="auth-buttons">
+            <button className="auth-submit" type="submit" disabled={authBusy}>
+              로그인
+            </button>
+            <button className="auth-submit ghost" type="button" onClick={signUp} disabled={authBusy}>
+              회원가입
+            </button>
+          </div>
+          {authMsg && <p className="auth-msg">{authMsg}</p>}
+        </form>
+      )}
 
       <div className="scene">
         <div
@@ -263,7 +342,7 @@ export default function Home() {
       </button>
 
       <section className="history">
-        <h2 className="history-title">내 운세 기록</h2>
+        <h2 className="history-title">{user ? `${user.email}의 운세 기록` : "내 운세 기록"}</h2>
         {history.length === 0 ? (
           <p className="history-empty">아직 뽑은 운세가 없습니다. 첫 카드를 뽑아보세요!</p>
         ) : (
