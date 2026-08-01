@@ -11,28 +11,36 @@ export async function POST(request) {
 
   let zodiac = null;
   let keyword = "";
+  let kr = "";
+  let message = "";
   let item = "";
   let hue = 260;
   try {
     const body = await request.json();
     if (typeof body.zodiac === "string" && body.zodiac.length <= 10) zodiac = body.zodiac;
     if (typeof body.keyword === "string" && body.keyword.length <= 30) keyword = body.keyword;
+    if (typeof body.kr === "string" && body.kr.length <= 20) kr = body.kr;
+    if (typeof body.message === "string" && body.message.length <= 200) message = body.message;
     if (typeof body.item === "string" && body.item.length <= 20) item = body.item;
     if (Number.isFinite(Number(body.hue))) hue = ((Number(body.hue) % 360) + 360) % 360;
   } catch {}
 
-  const subject = zodiac
-    ? `the "${zodiac}" (Korean name of a western zodiac sign) constellation`
-    : "a beautiful constellation of shimmering stars";
-
+  // 운세 '내용'을 상징하는 구체적인 사물이 주인공 — 추상화 금지, 별자리 없음
   const prompt = [
-    `Elegant dreamy illustration for a fortune card: ${subject} glowing in a deep midnight-blue night sky.`,
-    `Delicate golden star points connected by thin constellation lines, many tiny sparkling stars,`,
-    `a subtle nebula tinted with a hue around ${hue} degrees, luxurious dark tarot-card aesthetic.`,
-    keyword ? `The scene evokes the mood of "${keyword}".` : "",
-    item ? `Subtly weave in a small symbolic motif of "${item}" (Korean word) floating among the stars.` : "",
-    "Wide horizontal composition, painterly, high contrast against darkness. No text, no letters, no watermark.",
-  ].join(" ");
+    `Create one bold symbolic illustration that captures this Korean daily fortune:`,
+    message ? `"${message}"` : `theme "${keyword || "hope"}${kr ? ` (${kr})` : ""}".`,
+    `Pick ONE concrete, instantly recognizable real-world object or scene that symbolizes the fortune's message or the guidance it gives the reader for today${keyword ? ` — the theme is "${keyword}"${kr ? ` (${kr})` : ""}` : ""}`,
+    `(for example: if the fortune says to start something, an opening door or a sunrise path; if it says to rest, a hammock under a tree; if it says to connect with people, two clinking teacups — something you can name at a glance that matches THIS fortune's advice).`,
+    `Make it the hero of the composition, big and centered.`,
+    item ? `Also include the lucky item "${item}" (Korean word) as a clearly visible object in the scene.` : "",
+    `ABSOLUTELY NOT abstract art: no abstract swirls, no vague shapes, no constellations, no star maps, no zodiac imagery.`,
+    `STYLE: retro-funky 1970s psychedelic poster art — groovy wavy lines, bold thick outlines,`,
+    `flat vivid colors keyed around hue ${hue} degrees with orange/cream/teal retro accents,`,
+    `halftone dots and subtle grain like a vintage screen print, sunburst rays, funky and playful energy.`,
+    "Wide horizontal composition. No text, no letters, no watermark.",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   try {
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {

@@ -98,13 +98,20 @@ function pickRandom(list) {
 const STORAGE_KEY = "fortune-history";
 const BIRTH_KEY = "fortune-birth";
 
-// 운세에 어울리는 별 이미지 생성 — 실패해도 카드에는 영향 없음
-async function fetchStarImage(zodiac, keyword, hue, item) {
+// 운세 내용에 어울리는 그림 생성 — 실패해도 카드에는 영향 없음
+async function fetchStarImage(fortune, item) {
   try {
     const res = await fetch("/api/star-image", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ zodiac, keyword, hue, item }),
+      body: JSON.stringify({
+        zodiac: fortune.zodiac,
+        keyword: fortune.keyword,
+        kr: fortune.kr,
+        message: fortune.message,
+        hue: fortune.hue,
+        item,
+      }),
     });
     if (!res.ok) return null;
     const d = await res.json();
@@ -245,8 +252,8 @@ export default function Home() {
     setFortune(f);
     setItem(it);
     if (ai) {
-      // 별 이미지는 비동기로 생성해서 도착하면 카드 액자에 서서히 담긴다
-      fetchStarImage(f.zodiac, f.keyword, f.hue, it.name).then((image) => {
+      // 운세 그림은 비동기로 생성해서 도착하면 카드 액자에 서서히 담긴다
+      fetchStarImage(f, it.name).then((image) => {
         if (image && drawIdRef.current === drawId) {
           setFortune((prev) => (prev ? { ...prev, image } : prev));
         }
