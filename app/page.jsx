@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 
 const FORTUNES = [
@@ -98,6 +98,34 @@ function pickRandom(list) {
 const STORAGE_KEY = "fortune-history";
 const BIRTH_KEY = "fortune-birth";
 
+// 운세에 어울리는 별 이미지 생성 — 실패해도 카드에는 영향 없음
+async function fetchStarImage(zodiac, keyword, hue) {
+  try {
+    const res = await fetch("/api/star-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ zodiac, keyword, hue }),
+    });
+    if (!res.ok) return null;
+    const d = await res.json();
+    return typeof d.image === "string" && d.image.startsWith("data:image") ? d.image : null;
+  } catch {
+    return null;
+  }
+}
+
+// 짜잔 연출용 반짝이 위치 (좌표 %, 지연 s)
+const SPARKLES = [
+  { left: "-6%", top: "12%", delay: 0 },
+  { left: "102%", top: "22%", delay: 0.15 },
+  { left: "-10%", top: "55%", delay: 0.3 },
+  { left: "105%", top: "62%", delay: 0.1 },
+  { left: "8%", top: "-6%", delay: 0.25 },
+  { left: "86%", top: "-8%", delay: 0.4 },
+  { left: "14%", top: "102%", delay: 0.35 },
+  { left: "82%", top: "104%", delay: 0.2 },
+];
+
 // AI(/api/fortune) 호출 — 실패하면 null을 돌려주고 로컬 목록으로 폴백
 async function fetchAiFortune(birthDate) {
   try {
@@ -138,6 +166,8 @@ export default function Home() {
   const [history, setHistory] = useState([]);
   const [birth, setBirth] = useState("");
   const [drawing, setDrawing] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
+  const drawIdRef = useRef(0);
 
   // 저장된 생년월일 불러오기
   useEffect(() => {
@@ -198,11 +228,20 @@ export default function Home() {
 
   const draw = async () => {
     // 1순위: AI 생성(점성술 기반), 실패 시 로컬 목록으로 폴백
+    const drawId = ++drawIdRef.current;
     const ai = await fetchAiFortune(birth);
     const f = ai ? ai.fortune : pickRandom(FORTUNES);
     const it = ai ? ai.item : pickRandom(LUCKY_ITEMS);
     setFortune(f);
     setItem(it);
+    if (ai) {
+      // 별 이미지는 비동기로 생성해서 도착하면 카드에 서서히 입힌다
+      fetchStarImage(f.zodiac, f.keyword, f.hue).then((image) => {
+        if (image && drawIdRef.current === drawId) {
+          setFortune((prev) => (prev ? { ...prev, image } : prev));
+        }
+      });
+    }
     const entry = {
       at: new Date().toISOString(),
       keyword: f.keyword,
@@ -226,6 +265,13 @@ export default function Home() {
     });
   };
 
+  const reveal = () => {
+    // 짜잔! — 카드가 한 바퀴 더 돌며 반짝임과 함께 공개된다
+    setFlipped(true);
+    setCelebrate(true);
+    setTimeout(() => setCelebrate(false), 1700);
+  };
+
   const drawFortune = async () => {
     if (drawing) return;
     setDrawing(true);
@@ -233,10 +279,10 @@ export default function Home() {
       setFlipped(false);
       await new Promise((r) => setTimeout(r, 450));
       await draw();
-      setFlipped(true);
+      reveal();
     } else {
       await draw();
-      setFlipped(true);
+      reveal();
     }
     setDrawing(false);
   };
@@ -340,9 +386,19 @@ export default function Home() {
         </form>
       )}
 
-      <div className="scene">
+      <div className={`scene ${celebrate ? "celebrate" : ""}`}>
+        {celebrate &&
+          SPARKLES.map((s, i) => (
+            <span
+              key={i}
+              className="sparkle"
+              style={{ left: s.left, top: s.top, animationDelay: `${s.delay}s` }}
+            >
+              ✦
+            </span>
+          ))}
         <div
-          className={`card ${flipped ? "is-flipped" : ""}`}
+          className={`card ${flipped ? "is-flipped" : ""} ${celebrate ? "tada" : ""}`}
           style={fortune ? { "--h": fortune.hue, "--score": fortune.score } : undefined}
         >
           <div className="card-face card-front">
@@ -355,6 +411,7 @@ export default function Home() {
           </div>
 
           <div className="card-face card-back">
+            {fortune?.image && <img src={fortune.image} alt="" className="card-art" />}
             <div className="holo" />
             {fortune && (
               <>
