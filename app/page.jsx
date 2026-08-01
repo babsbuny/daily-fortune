@@ -96,6 +96,44 @@ function pickRandom(list) {
 
 const STORAGE_KEY = "fortune-history";
 
+// Supabase 연결 정보 (없으면 localStorage만 사용)
+const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPA_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supaEnabled = Boolean(SUPA_URL && SUPA_KEY);
+const supaHeaders = {
+  apikey: SUPA_KEY,
+  "Content-Type": "application/json",
+};
+
+async function fetchHistoryFromSupabase() {
+  const res = await fetch(
+    `${SUPA_URL}/rest/v1/fortune_history?select=created_at,keyword,kr,score,item&order=created_at.desc&limit=50`,
+    { headers: supaHeaders }
+  );
+  if (!res.ok) throw new Error(`supabase select failed: ${res.status}`);
+  const rows = await res.json();
+  return rows.map((r) => ({
+    at: r.created_at,
+    keyword: r.keyword,
+    kr: r.kr,
+    score: r.score,
+    item: r.item,
+  }));
+}
+
+function insertHistoryToSupabase(entry) {
+  return fetch(`${SUPA_URL}/rest/v1/fortune_history`, {
+    method: "POST",
+    headers: supaHeaders,
+    body: JSON.stringify({
+      keyword: entry.keyword,
+      kr: entry.kr,
+      score: entry.score,
+      item: entry.item,
+    }),
+  });
+}
+
 function formatTime(iso) {
   const d = new Date(iso);
   const p = (n) => String(n).padStart(2, "0");
@@ -108,12 +146,20 @@ export default function Home() {
   const [item, setItem] = useState(null);
   const [history, setHistory] = useState([]);
 
-  // localStorage는 브라우저에만 있으므로 마운트 후에 불러온다 (SSR 하이드레이션 오류 방지)
+  // 기록 불러오기: Supabase가 연결돼 있으면 서버에서, 아니면 localStorage에서
+  // (localStorage는 브라우저에만 있으므로 마운트 후에 불러온다 — SSR 하이드레이션 오류 방지)
   useEffect(() => {
-    try {
-      setHistory(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"));
-    } catch {
-      setHistory([]);
+    const loadLocal = () => {
+      try {
+        setHistory(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"));
+      } catch {
+        setHistory([]);
+      }
+    };
+    if (supaEnabled) {
+      fetchHistoryFromSupabase().then(setHistory).catch(loadLocal);
+    } else {
+      loadLocal();
     }
   }, []);
 
@@ -122,17 +168,18 @@ export default function Home() {
     const it = pickRandom(LUCKY_ITEMS);
     setFortune(f);
     setItem(it);
+    const entry = {
+      at: new Date().toISOString(),
+      keyword: f.keyword,
+      kr: f.kr,
+      score: f.score,
+      item: `${it.emoji} ${it.name}`,
+    };
+    if (supaEnabled) {
+      insertHistoryToSupabase(entry).catch(() => {});
+    }
     setHistory((prev) => {
-      const next = [
-        {
-          at: new Date().toISOString(),
-          keyword: f.keyword,
-          kr: f.kr,
-          score: f.score,
-          item: `${it.emoji} ${it.name}`,
-        },
-        ...prev,
-      ];
+      const next = [entry, ...prev];
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       } catch {}
