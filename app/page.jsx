@@ -96,6 +96,34 @@ function pickRandom(list) {
 }
 
 const STORAGE_KEY = "fortune-history";
+const BIRTH_KEY = "fortune-birth";
+
+// AI(/api/fortune) 호출 — 실패하면 null을 돌려주고 로컬 목록으로 폴백
+async function fetchAiFortune(birthDate) {
+  try {
+    const res = await fetch("/api/fortune", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ birthDate: birthDate || null }),
+    });
+    if (!res.ok) return null;
+    const d = await res.json();
+    if (!d.keyword || !d.message) return null;
+    return {
+      fortune: {
+        keyword: d.keyword,
+        kr: d.kr,
+        score: Math.min(99, Math.max(1, Number(d.score) || 80)),
+        hue: ((Number(d.hue) % 360) + 360) % 360,
+        message: d.message,
+        zodiac: d.zodiac || null,
+      },
+      item: { name: d.item_name || "네잎클로버", emoji: d.item_emoji || "🍀" },
+    };
+  } catch {
+    return null;
+  }
+}
 
 function formatTime(iso) {
   const d = new Date(iso);
@@ -108,6 +136,22 @@ export default function Home() {
   const [fortune, setFortune] = useState(null);
   const [item, setItem] = useState(null);
   const [history, setHistory] = useState([]);
+  const [birth, setBirth] = useState("");
+  const [drawing, setDrawing] = useState(false);
+
+  // 저장된 생년월일 불러오기
+  useEffect(() => {
+    try {
+      setBirth(localStorage.getItem(BIRTH_KEY) || "");
+    } catch {}
+  }, []);
+
+  const onBirthChange = (value) => {
+    setBirth(value);
+    try {
+      localStorage.setItem(BIRTH_KEY, value);
+    } catch {}
+  };
 
   // 로그인 상태
   const [user, setUser] = useState(null);
@@ -152,9 +196,11 @@ export default function Home() {
     });
   }, [user]);
 
-  const draw = () => {
-    const f = pickRandom(FORTUNES);
-    const it = pickRandom(LUCKY_ITEMS);
+  const draw = async () => {
+    // 1순위: AI 생성(점성술 기반), 실패 시 로컬 목록으로 폴백
+    const ai = await fetchAiFortune(birth);
+    const f = ai ? ai.fortune : pickRandom(FORTUNES);
+    const it = ai ? ai.item : pickRandom(LUCKY_ITEMS);
     setFortune(f);
     setItem(it);
     const entry = {
@@ -180,17 +226,19 @@ export default function Home() {
     });
   };
 
-  const drawFortune = () => {
+  const drawFortune = async () => {
+    if (drawing) return;
+    setDrawing(true);
     if (flipped) {
       setFlipped(false);
-      setTimeout(() => {
-        draw();
-        setFlipped(true);
-      }, 450);
+      await new Promise((r) => setTimeout(r, 450));
+      await draw();
+      setFlipped(true);
     } else {
-      draw();
+      await draw();
       setFlipped(true);
     }
+    setDrawing(false);
   };
 
   const signIn = async () => {
@@ -320,6 +368,7 @@ export default function Home() {
                 <div className="keyword-block">
                   <span className="keyword">{fortune.keyword}</span>
                   <span className="keyword-kr">{fortune.kr}</span>
+                  {fortune.zodiac && <span className="zodiac-chip">✨ {fortune.zodiac}의 오늘</span>}
                 </div>
 
                 <p className="message">{fortune.message}</p>
@@ -337,8 +386,21 @@ export default function Home() {
         </div>
       </div>
 
-      <button className="draw-button" onClick={drawFortune}>
-        {flipped ? "다시 뽑기" : "운세 뽑기"}
+      <div className="birth-row">
+        <label className="birth-label" htmlFor="birth-input">
+          생년월일 (선택 · 별자리 운세)
+        </label>
+        <input
+          id="birth-input"
+          className="birth-input"
+          type="date"
+          value={birth}
+          onChange={(e) => onBirthChange(e.target.value)}
+        />
+      </div>
+
+      <button className="draw-button" onClick={drawFortune} disabled={drawing}>
+        {drawing ? "별자리를 읽는 중…" : flipped ? "다시 뽑기" : "운세 뽑기"}
       </button>
 
       <section className="history">
