@@ -253,10 +253,12 @@ export default function Home() {
     setItem(it);
     if (ai) {
       // 운세 그림은 비동기로 생성해서 도착하면 카드 액자에 서서히 담긴다
+      // 실패하면 액자를 접어서 자리표시자가 무한 대기하지 않게 한다
       fetchStarImage(f, it.name).then((image) => {
-        if (image && drawIdRef.current === drawId) {
-          setFortune((prev) => (prev ? { ...prev, image } : prev));
-        }
+        if (drawIdRef.current !== drawId) return;
+        setFortune((prev) =>
+          prev ? { ...prev, image: image || undefined, artFailed: !image } : prev
+        );
       });
     }
     const entry = {
@@ -447,7 +449,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {fortune.ai && (
+                {fortune.ai && !fortune.artFailed && (
                   <div className="art-frame">
                     {fortune.image ? (
                       <img src={fortune.image} alt="오늘의 운세 그림" className="art-img" />
