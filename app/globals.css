@@ -121,8 +121,8 @@ body {
 /* 카드 */
 .scene {
   position: relative;
-  width: 264px;
-  height: 396px;
+  width: 284px;
+  height: 486px;
   perspective: 1300px;
   z-index: 1;
 }
@@ -237,30 +237,38 @@ body {
   padding: 1.4rem 1.25rem;
 }
 
-/* AI 생성 별 이미지 — 콘텐츠 뒤에 은은하게 깔린다 */
-.card-art {
-  position: absolute;
-  inset: 0;
+/* AI 그림 액자 — 운세와 어울리는 그림이 카드 안에 담긴다 */
+.art-frame {
+  width: 100%;
+  height: 138px;
+  flex: none;
+  border-radius: 12px;
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(#141019, #141019) padding-box,
+    linear-gradient(135deg, var(--accent), hsl(calc(var(--h, 268) + 70) 85% 70%)) border-box;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.art-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 18px;
-  opacity: 0;
-  animation: art-in 1.4s ease 0.2s forwards;
-  pointer-events: none;
+  animation: art-in 0.9s ease both;
 }
 
 @keyframes art-in {
-  to { opacity: 0.45; }
+  from { opacity: 0; transform: scale(1.06); }
+  to { opacity: 1; transform: scale(1); }
 }
 
-.card-back > :not(.card-art) {
-  position: relative;
-  z-index: 1;
-}
-
-.card-back .message {
-  text-shadow: 0 1px 8px rgba(10, 8, 16, 0.9);
+.art-loading {
+  font-size: 1.4rem;
+  color: var(--accent);
+  animation: breathe 1.6s ease-in-out infinite;
 }
 
 /* 짜잔! 공개 연출 — 한 바퀴 더 돌면서 살짝 튀어오른다 */
@@ -275,22 +283,41 @@ body {
   100% { transform: rotateY(540deg) scale(1); }
 }
 
-/* 카드 주변 반짝이 */
-.sparkle {
+/* 파팡~!! 폭죽 입자 — 카드 중심에서 사방으로 터진다 */
+.pop {
   position: absolute;
+  left: 50%;
+  top: 45%;
   z-index: 3;
-  font-size: 1.3rem;
-  color: #ffe9a8;
-  text-shadow: 0 0 12px rgba(255, 233, 168, 0.9), 0 0 26px rgba(196, 107, 255, 0.6);
   opacity: 0;
-  animation: sparkle-pop 1.3s ease forwards;
   pointer-events: none;
+  animation: pop-fly 1s cubic-bezier(0.12, 0.8, 0.3, 1) forwards;
 }
 
-@keyframes sparkle-pop {
-  0% { opacity: 0; transform: scale(0) rotate(0deg); }
-  35% { opacity: 1; transform: scale(1.25) rotate(40deg); }
-  100% { opacity: 0; transform: scale(0.3) rotate(120deg) translateY(-14px); }
+.pop-dot {
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor, 0 0 16px currentColor;
+}
+
+.pop-star {
+  line-height: 1;
+  text-shadow: 0 0 10px currentColor;
+}
+
+@keyframes pop-fly {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translate(0, 0) scale(0);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -50%) translate(calc(var(--tx) * 0.35), calc(var(--ty) * 0.35)) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translate(var(--tx), var(--ty)) scale(0.15);
+  }
 }
 
 /* 행운 지수 게이지 링 */

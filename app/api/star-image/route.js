@@ -11,11 +11,13 @@ export async function POST(request) {
 
   let zodiac = null;
   let keyword = "";
+  let item = "";
   let hue = 260;
   try {
     const body = await request.json();
     if (typeof body.zodiac === "string" && body.zodiac.length <= 10) zodiac = body.zodiac;
     if (typeof body.keyword === "string" && body.keyword.length <= 30) keyword = body.keyword;
+    if (typeof body.item === "string" && body.item.length <= 20) item = body.item;
     if (Number.isFinite(Number(body.hue))) hue = ((Number(body.hue) % 360) + 360) % 360;
   } catch {}
 
@@ -24,11 +26,12 @@ export async function POST(request) {
     : "a beautiful constellation of shimmering stars";
 
   const prompt = [
-    `Elegant minimal illustration of ${subject} glowing in a deep midnight-blue night sky.`,
-    `Delicate golden star points connected by thin constellation lines, tiny sparkling stars scattered around,`,
-    `a subtle nebula tinted with a hue around ${hue} degrees, luxurious dark tarot-card aesthetic,`,
-    keyword ? `evoking the mood of "${keyword}".` : "",
-    "Vertical composition, dreamy, high contrast against darkness. No text, no letters, no watermark.",
+    `Elegant dreamy illustration for a fortune card: ${subject} glowing in a deep midnight-blue night sky.`,
+    `Delicate golden star points connected by thin constellation lines, many tiny sparkling stars,`,
+    `a subtle nebula tinted with a hue around ${hue} degrees, luxurious dark tarot-card aesthetic.`,
+    keyword ? `The scene evokes the mood of "${keyword}".` : "",
+    item ? `Subtly weave in a small symbolic motif of "${item}" (Korean word) floating among the stars.` : "",
+    "Wide horizontal composition, painterly, high contrast against darkness. No text, no letters, no watermark.",
   ].join(" ");
 
   try {

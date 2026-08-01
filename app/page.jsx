@@ -99,12 +99,12 @@ const STORAGE_KEY = "fortune-history";
 const BIRTH_KEY = "fortune-birth";
 
 // 운세에 어울리는 별 이미지 생성 — 실패해도 카드에는 영향 없음
-async function fetchStarImage(zodiac, keyword, hue) {
+async function fetchStarImage(zodiac, keyword, hue, item) {
   try {
     const res = await fetch("/api/star-image", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ zodiac, keyword, hue }),
+      body: JSON.stringify({ zodiac, keyword, hue, item }),
     });
     if (!res.ok) return null;
     const d = await res.json();
@@ -114,17 +114,25 @@ async function fetchStarImage(zodiac, keyword, hue) {
   }
 }
 
-// 짜잔 연출용 반짝이 위치 (좌표 %, 지연 s)
-const SPARKLES = [
-  { left: "-6%", top: "12%", delay: 0 },
-  { left: "102%", top: "22%", delay: 0.15 },
-  { left: "-10%", top: "55%", delay: 0.3 },
-  { left: "105%", top: "62%", delay: 0.1 },
-  { left: "8%", top: "-6%", delay: 0.25 },
-  { left: "86%", top: "-8%", delay: 0.4 },
-  { left: "14%", top: "102%", delay: 0.35 },
-  { left: "82%", top: "104%", delay: 0.2 },
-];
+// 파팡~!! 폭죽 입자 생성 — 뽑을 때마다 랜덤으로 사방에 터진다
+const BURST_COLORS = ["#ffe9a8", "#ffd93d", "#c46bff", "#7cd8ff", "#ff9fd6", "#ffffff"];
+
+function makeBurst() {
+  const parts = [];
+  for (let i = 0; i < 44; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 70 + Math.random() * 150;
+    parts.push({
+      tx: Math.round(Math.cos(angle) * dist),
+      ty: Math.round(Math.sin(angle) * dist * 0.85),
+      size: 3 + Math.random() * 4,
+      delay: Math.random() * 0.5,
+      color: BURST_COLORS[Math.floor(Math.random() * BURST_COLORS.length)],
+      star: Math.random() < 0.22,
+    });
+  }
+  return parts;
+}
 
 // AI(/api/fortune) 호출 — 실패하면 null을 돌려주고 로컬 목록으로 폴백
 async function fetchAiFortune(birthDate) {
@@ -139,6 +147,7 @@ async function fetchAiFortune(birthDate) {
     if (!d.keyword || !d.message) return null;
     return {
       fortune: {
+        ai: true,
         keyword: d.keyword,
         kr: d.kr,
         score: Math.min(99, Math.max(1, Number(d.score) || 80)),
@@ -167,6 +176,7 @@ export default function Home() {
   const [birth, setBirth] = useState("");
   const [drawing, setDrawing] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
+  const [burst, setBurst] = useState([]);
   const drawIdRef = useRef(0);
 
   // 저장된 생년월일 불러오기
@@ -235,8 +245,8 @@ export default function Home() {
     setFortune(f);
     setItem(it);
     if (ai) {
-      // 별 이미지는 비동기로 생성해서 도착하면 카드에 서서히 입힌다
-      fetchStarImage(f.zodiac, f.keyword, f.hue).then((image) => {
+      // 별 이미지는 비동기로 생성해서 도착하면 카드 액자에 서서히 담긴다
+      fetchStarImage(f.zodiac, f.keyword, f.hue, it.name).then((image) => {
         if (image && drawIdRef.current === drawId) {
           setFortune((prev) => (prev ? { ...prev, image } : prev));
         }
@@ -266,10 +276,11 @@ export default function Home() {
   };
 
   const reveal = () => {
-    // 짜잔! — 카드가 한 바퀴 더 돌며 반짝임과 함께 공개된다
+    // 짜잔! — 카드가 한 바퀴 더 돌며 폭죽이 파팡 터진다
     setFlipped(true);
+    setBurst(makeBurst());
     setCelebrate(true);
-    setTimeout(() => setCelebrate(false), 1700);
+    setTimeout(() => setCelebrate(false), 1800);
   };
 
   const drawFortune = async () => {
@@ -388,13 +399,21 @@ export default function Home() {
 
       <div className={`scene ${celebrate ? "celebrate" : ""}`}>
         {celebrate &&
-          SPARKLES.map((s, i) => (
+          burst.map((p, i) => (
             <span
               key={i}
-              className="sparkle"
-              style={{ left: s.left, top: s.top, animationDelay: `${s.delay}s` }}
+              className={`pop ${p.star ? "pop-star" : "pop-dot"}`}
+              style={{
+                "--tx": `${p.tx}px`,
+                "--ty": `${p.ty}px`,
+                width: p.star ? undefined : `${p.size}px`,
+                height: p.star ? undefined : `${p.size}px`,
+                fontSize: p.star ? `${p.size + 5}px` : undefined,
+                color: p.color,
+                animationDelay: `${p.delay}s`,
+              }}
             >
-              ✦
+              {p.star ? "✦" : ""}
             </span>
           ))}
         <div
@@ -411,7 +430,6 @@ export default function Home() {
           </div>
 
           <div className="card-face card-back">
-            {fortune?.image && <img src={fortune.image} alt="" className="card-art" />}
             <div className="holo" />
             {fortune && (
               <>
@@ -421,6 +439,16 @@ export default function Home() {
                     <span>LUCK</span>
                   </div>
                 </div>
+
+                {fortune.ai && (
+                  <div className="art-frame">
+                    {fortune.image ? (
+                      <img src={fortune.image} alt="오늘의 운세 그림" className="art-img" />
+                    ) : (
+                      <div className="art-loading">✦</div>
+                    )}
+                  </div>
+                )}
 
                 <div className="keyword-block">
                   <span className="keyword">{fortune.keyword}</span>
